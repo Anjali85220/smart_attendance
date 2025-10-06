@@ -10,6 +10,20 @@
 ## Progress
 - [x] Plan approved by user
 
+# Fix CORS and Face Recognition Model Issues
+
+## Tasks
+- [x] Update CORS configuration in server/src/app.js to allow 'https://student-registration-sepia.vercel.app' by default
+- [x] Download missing face_recognition_model-shard2 to web-enroll/public/models/
+- [x] Add GET /classes route to students.js to handle /api/students/classes requests
+- [ ] Redeploy the backend on Render with the updated CORS and new route
+- [ ] Redeploy the frontend on Vercel with the new model file
+
+## Progress
+- [x] CORS code updated
+- [x] Model shard downloaded
+- [ ] Awaiting redeployment
+
 # Make EnrollForm Mobile Responsive
 
 ## Tasks

@@ -117,4 +117,13 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.get('/classes', async (req, res, next) => {
+  try {
+    const classes = await ClassModel.find({}).sort({ name: 1 });
+    res.json(classes);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
