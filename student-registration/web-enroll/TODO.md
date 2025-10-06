@@ -9,3 +9,18 @@
 
 ## Progress
 - [x] Plan approved by user
+
+# Make EnrollForm Mobile Responsive
+
+## Tasks
+- [x] Add responsive CSS media queries to styles.css for mobile (max-width: 768px)
+- [x] Reduce container padding and margin on mobile
+- [x] Adjust font sizes for headings, inputs, buttons on mobile
+- [x] Change .row to flex-direction: column on mobile to prevent overlap
+- [x] Adjust .grid columns and thumb sizes for mobile
+- [x] Adjust camera video and buttons for mobile
+- [x] Hide or adjust background circles on mobile
+- [x] Test the mobile responsiveness
+
+## Progress
+- [x] Plan approved by user

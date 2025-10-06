@@ -56,14 +56,14 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
 
   return (
     <div style={{ border:'1px solid #e5e7eb', padding:12, borderRadius:8 }}>
-      <div className="actions">
-        {!active ? <button onClick={start}>Open Camera</button> : <button onClick={stop}>Close Camera</button>}
-        <button onClick={snapOne} disabled={!active}>Capture</button>
-        <button onClick={() => start360(10, 600)} disabled={!active}>360 Capture (10)</button>
+      <div className="actions" style={{ flexWrap: 'wrap', gap: '8px' }}>
+        {!active ? <button onClick={start} style={{ flex: '1 1 auto', minWidth: '120px' }}>Open Camera</button> : <button onClick={stop} style={{ flex: '1 1 auto', minWidth: '120px' }}>Close Camera</button>}
+        <button onClick={snapOne} disabled={!active} style={{ flex: '1 1 auto', minWidth: '120px' }}>Capture</button>
+        <button onClick={() => start360(10, 600)} disabled={!active} style={{ flex: '1 1 auto', minWidth: '120px' }}>360 Capture (10)</button>
         {countdown>0 && <span className="badge">{countdown} left</span>}
       </div>
       <div style={{ marginTop: 10 }}>
-        <video ref={videoRef} autoPlay playsInline style={{ width:'100%', borderRadius:8 }} />
+        <video ref={videoRef} autoPlay playsInline style={{ width:'100%', maxHeight: '300px', borderRadius:8 }} />
       </div>
       <p className="note">Tip: For 360 capture, slowly turn your head left/right and tilt a bit for better angles.</p>
     </div>
