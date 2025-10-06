@@ -9,8 +9,8 @@ export const api = axios.create({
 });
 
 // Classes
-export const listClasses = () => api.get('/students/classes').then(r => r.data);
-export const createClass = (name) => api.post('/students/classes', { name }).then(r => r.data);
+export const listClasses = () => api.get('/classes').then(r => r.data);
+export const createClass = (name) => api.post('/classes', { name }).then(r => r.data);
 
 // Students
 export const enrollStudent = (formData) =>
