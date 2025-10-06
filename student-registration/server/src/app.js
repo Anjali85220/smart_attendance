@@ -13,7 +13,7 @@ const app = express();
 // Proper CORS configuration
 const allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(',') // can support multiple origins if comma separated
-  : []; // empty array = no origin allowed by default
+  : ['https://student-registration-sepia.vercel.app']; // default to allow the deployed frontend
 
 app.use(cors({
   origin: function(origin, callback) {
