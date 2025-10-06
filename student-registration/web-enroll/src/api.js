@@ -4,13 +4,13 @@ import axios from 'axios';
 const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
 export const api = axios.create({
-  baseURL: `${API_BASE}/api`,
+  baseURL: `${API_BASE}/api`, // base is /api
   timeout: 30000
 });
 
 // Classes
-export const listClasses = () => api.get('/classes').then(r => r.data);
-export const createClass = (name) => api.post('/classes', { name }).then(r => r.data);
+export const listClasses = () => api.get('/students/classes').then(r => r.data);
+export const createClass = (name) => api.post('/students/classes', { name }).then(r => r.data);
 
 // Students
 export const enrollStudent = (formData) =>
