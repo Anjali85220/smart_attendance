@@ -1,14 +1,18 @@
 import axios from 'axios';
 
-// Adjust if server runs elsewhere
+// Use backend URL from .env
+const API_BASE = import.meta.env.VITE_BACKEND_URL;
+
 export const api = axios.create({
-  baseURL: 'http://localhost:4000/api',
+  baseURL: `${API_BASE}/api`,
   timeout: 30000
 });
 
+// Classes
 export const listClasses = () => api.get('/classes').then(r => r.data);
 export const createClass = (name) => api.post('/classes', { name }).then(r => r.data);
 
+// Students
 export const enrollStudent = (formData) =>
   api.post('/students', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
      .then(r => r.data);
@@ -16,4 +20,5 @@ export const enrollStudent = (formData) =>
 export const listStudents = (className) =>
   api.get('/students', { params: { className } }).then(r => r.data);
 
-export const imageUrl = (id) => `http://localhost:4000/api/images/${id}`;
+// Image URLs
+export const imageUrl = (id) => `${API_BASE}/api/images/${id}`;
