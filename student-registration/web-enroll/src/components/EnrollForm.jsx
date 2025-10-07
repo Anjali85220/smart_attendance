@@ -13,6 +13,8 @@ export default function EnrollForm() {
   const [previews, setPreviews] = useState([]); // object URLs
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [enrolledStudent, setEnrolledStudent] = useState(null);
   const { ready, descriptorFromBlob } = useFaceApi('/models'); // offline models
 
   // Track which files are 360 images
@@ -94,7 +96,8 @@ export default function EnrollForm() {
 
       // reset inputs but keep class selection
       setRollNo(''); setName(''); setFiles([]); setPreviews([]); setIs360Flags([]);
-      alert(`Enrolled: ${saved.name} (${saved.rollNo})`);
+      setEnrolledStudent(saved);
+      setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
       alert(err?.response?.data?.error || 'Failed to enroll');
@@ -235,6 +238,19 @@ export default function EnrollForm() {
           </div>
         )}
       </section>
+
+      {showSuccessModal && enrolledStudent && (
+        <div className="success-modal-overlay" onClick={() => setShowSuccessModal(false)}>
+          <div className="success-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="success-content">
+              <div className="success-emoji">🎉👾✨</div>
+              <h2>Enrollment Successful!</h2>
+              <p>Student <strong>{enrolledStudent.name}</strong> ({enrolledStudent.rollNo}) has been enrolled.</p>
+              <button className="close-modal-btn" onClick={() => setShowSuccessModal(false)}>OK</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
