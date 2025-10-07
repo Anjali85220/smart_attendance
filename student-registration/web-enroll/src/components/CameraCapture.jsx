@@ -5,10 +5,21 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
   const [stream, setStream] = useState(null);
   const [active, setActive] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [facingMode, setFacingMode] = useState('user'); // 'user' for front, 'environment' for back
+  const [devices, setDevices] = useState([]);
+  const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
   const [permissionGranted, setPermissionGranted] = useState(null); // null, true, false
 
   useEffect(() => {
+    const loadDevices = async () => {
+      try {
+        const deviceList = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = deviceList.filter(device => device.kind === 'videoinput');
+        setDevices(videoDevices);
+      } catch (err) {
+        console.warn('Error enumerating devices:', err);
+      }
+    };
+    loadDevices();
     return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
   }, [stream]);
 
@@ -32,30 +43,23 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
       return;
     }
     try {
-      // Try with facingMode first
-      let constraints = { video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+      let constraints = { video: true, audio: false };
+      if (devices.length > 0 && devices[currentDeviceIndex]) {
+        constraints.video = { deviceId: { exact: devices[currentDeviceIndex].deviceId } };
+      }
       let s = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(s);
       setActive(true);
       setPermissionGranted(true);
       if (videoRef.current) videoRef.current.srcObject = s;
+      // Reload devices after permission granted to get labels
+      const deviceList = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = deviceList.filter(device => device.kind === 'videoinput');
+      setDevices(videoDevices);
     } catch (err) {
-      console.error('Error accessing camera with facingMode:', err);
-      try {
-        // Fallback: try without facingMode for mobile compatibility
-        let constraints = { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
-        let s = await navigator.mediaDevices.getUserMedia(constraints);
-        setStream(s);
-        setActive(true);
-        setPermissionGranted(true);
-        if (videoRef.current) videoRef.current.srcObject = s;
-        // Reset facingMode to indicate fallback
-        setFacingMode('user');
-      } catch (fallbackErr) {
-        console.error('Error accessing camera even without facingMode:', fallbackErr);
-        setPermissionGranted(false);
-        alert('Unable to access camera. Please check permissions and ensure you are using HTTPS on mobile.');
-      }
+      console.error('Error accessing camera:', err);
+      setPermissionGranted(false);
+      alert('Unable to access camera. Please ensure you are using HTTPS on mobile and grant camera permissions.');
     }
   };
 
@@ -67,8 +71,12 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
   };
 
   const toggleCamera = async () => {
-    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
-    setFacingMode(newFacingMode);
+    if (devices.length <= 1) {
+      alert('Only one camera available.');
+      return;
+    }
+    const nextIndex = (currentDeviceIndex + 1) % devices.length;
+    setCurrentDeviceIndex(nextIndex);
     if (active) {
       stop();
       setTimeout(() => start(), 100); // Small delay to ensure stop completes
@@ -117,15 +125,15 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
     <div style={{ border:'1px solid #e5e7eb', padding:12, borderRadius:8 }}>
       <div className="actions" style={{ flexWrap: 'wrap', gap: '8px' }}>
         {!active ? <button onClick={start} style={{ flex: '1 1 auto', minWidth: '120px' }}>Open Camera</button> : <button onClick={stop} style={{ flex: '1 1 auto', minWidth: '120px' }}>Close Camera</button>}
-        <button onClick={toggleCamera} disabled={!active && !permissionGranted} style={{ flex: '1 1 auto', minWidth: '120px' }}>
-          {facingMode === 'user' ? 'Switch to Back' : 'Switch to Front'}
+        <button onClick={toggleCamera} disabled={!active || devices.length <= 1} style={{ flex: '1 1 auto', minWidth: '120px' }}>
+          Switch Camera
         </button>
         <button onClick={snapOne} disabled={!active} style={{ flex: '1 1 auto', minWidth: '120px' }}>Capture</button>
         <button onClick={() => start360(10, 600)} disabled={!active} style={{ flex: '1 1 auto', minWidth: '120px' }}>360 Capture (10)</button>
         {countdown>0 && <span className="badge">{countdown} left</span>}
       </div>
       <div style={{ marginTop: 10 }}>
-        <video ref={videoRef} autoPlay playsInline style={{ width:'100%', maxHeight: '300px', borderRadius:8 }} />
+        <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', maxHeight: '300px', borderRadius:8 }} />
       </div>
       <p className="note">Tip: For 360 capture, slowly turn your head left/right and tilt a bit for better angles.</p>
     </div>
