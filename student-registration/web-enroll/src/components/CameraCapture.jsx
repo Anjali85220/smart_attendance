@@ -32,15 +32,30 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
       return;
     }
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode }, audio: false });
+      // Try with facingMode first
+      let constraints = { video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+      let s = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(s);
       setActive(true);
       setPermissionGranted(true);
       if (videoRef.current) videoRef.current.srcObject = s;
     } catch (err) {
-      console.error('Error accessing camera:', err);
-      setPermissionGranted(false);
-      alert('Unable to access camera. Please check permissions.');
+      console.error('Error accessing camera with facingMode:', err);
+      try {
+        // Fallback: try without facingMode for mobile compatibility
+        let constraints = { video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+        let s = await navigator.mediaDevices.getUserMedia(constraints);
+        setStream(s);
+        setActive(true);
+        setPermissionGranted(true);
+        if (videoRef.current) videoRef.current.srcObject = s;
+        // Reset facingMode to indicate fallback
+        setFacingMode('user');
+      } catch (fallbackErr) {
+        console.error('Error accessing camera even without facingMode:', fallbackErr);
+        setPermissionGranted(false);
+        alert('Unable to access camera. Please check permissions and ensure you are using HTTPS on mobile.');
+      }
     }
   };
 
