@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .actions button { flex: 1 1 auto; min-width: 120px; padding: 8px; }
+    video { width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .note { font-size: 14px; color: #666; margin-top: 10px; }
+    .captures { margin-top: 20px; }
+    .captures img { width: 100px; height: 100px; object-fit: cover; margin: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Camera Test Page</h1>
+    <p>This page is for testing camera functionality on mobile devices.</p>
+    <div id="camera-container"></div>
+    <div id="captures" class="captures"></div>
+  </div>
+
+  <script>
+    let stream = null;
+    let devices = [];
+    let currentDeviceIndex = 0;
+    let active = false;
+
+    const container = document.getElementById('camera-container');
+    const capturesDiv = document.getElementById('captures');
+
+    function createCameraUI() {
+      container.innerHTML = `
+        <div style="border:1px solid #e5e7eb; padding:12px; border-radius:8px;">
+          <div class="actions">
+            <button id="open-btn">Open Camera</button>
+            <button id="close-btn" disabled>Close Camera</button>
+            <button id="toggle-btn" disabled>Switch Camera</button>
+            <button id="capture-btn" disabled>Capture</button>
+            <button id="capture360-btn" disabled>360 Capture (10)</button>
+            <span id="countdown" style="display:none;"></span>
+          </div>
+          <div style="margin-top: 10px;">
+            <video id="video" autoplay playsinline muted style="width:100%; max-height: 300px; border-radius:8px;"></video>
+          </div>
+          <p class="note">Tip: For 360 capture, slowly turn your head left/right and tilt a bit for better angles.</p>
+        </div>
+      `;
+
+      document.getElementById('open-btn').onclick = start;
+      document.getElementById('close-btn').onclick = stop;
+      document.getElementById('toggle-btn').onclick = toggleCamera;
+      document.getElementById('capture-btn').onclick = snapOne;
+      document.getElementById('capture360-btn').onclick = () => start360(10, 600);
+    }
+
+    async function loadDevices() {
+      try {
+        const deviceList = await navigator.mediaDevices.enumerateDevices();
+        devices = deviceList.filter(device => device.kind === 'videoinput');
+        updateToggleButton();
+      } catch (err) {
+        console.warn('Error enumerating devices:', err);
+      }
+    }
+
+    function updateToggleButton() {
+      const toggleBtn = document.getElementById('toggle-btn');
+      if (toggleBtn) {
+        toggleBtn.disabled = !active || devices.length <= 1;
+      }
+    }
+
+    async function start() {
+      try {
+        let constraints = { video: true, audio: false };
+        if (devices.length > 0 && devices[currentDeviceIndex]) {
+          constraints.video = { deviceId: { exact: devices[currentDeviceIndex].deviceId } };
+        }
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        document.getElementById('video').srcObject = stream;
+        active = true;
+        updateButtons();
+        // Reload devices after permission
+        const deviceList = await navigator.mediaDevices.enumerateDevices();
+        devices = deviceList.filter(device => device.kind === 'videoinput');
+        updateToggleButton();
+      } catch (err) {
+        console.error('Error accessing camera:', err);
+        alert('Unable to access camera. Please ensure you are using HTTPS on mobile and grant camera permissions.');
+      }
+    }
+
+    function stop() {
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      active = false;
+      updateButtons();
+    }
+
+    async function toggleCamera() {
+      if (devices.length <= 1) {
+        alert('Only one camera available.');
+        return;
+      }
+      const nextIndex = (currentDeviceIndex + 1) % devices.length;
+      currentDeviceIndex = nextIndex;
+      if (active) {
+        stop();
+        setTimeout(() => start(), 100);
+      }
+    }
+
+    function snapOne() {
+      const video = document.getElementById('video');
+      if (!video) return;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob((blob) => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(blob);
+        img.style.width = '100px';
+        img.style.height = '100px';
+        img.style.objectFit = 'cover';
+        img.style.margin = '5px';
+        capturesDiv.appendChild(img);
+      }, 'image/jpeg', 0.9);
+    }
+
+    function start360(shots = 10, intervalMs = 600) {
+      let taken = 0;
+      const countdownSpan = document.getElementById('countdown');
+      countdownSpan.style.display = 'inline';
+      countdownSpan.textContent = shots + ' left';
+      const id = setInterval(() => {
+        if (taken >= shots) {
+          clearInterval(id);
+          countdownSpan.style.display = 'none';
+          return;
+        }
+        const video = document.getElementById('video');
+        if (!video) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        canvas.toBlob((blob) => {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(blob);
+          img.style.width = '100px';
+          img.style.height = '100px';
+          img.style.objectFit = 'cover';
+          img.style.margin = '5px';
+          capturesDiv.appendChild(img);
+        }, 'image/jpeg', 0.9);
+        taken++;
+        countdownSpan.textContent = (shots - taken) + ' left';
+      }, intervalMs);
+    }
+
+    function updateButtons() {
+      document.getElementById('open-btn').disabled = active;
+      document.getElementById('close-btn').disabled = !active;
+      document.getElementById('toggle-btn').disabled = !active || devices.length <= 1;
+      document.getElementById('capture-btn').disabled = !active;
+      document.getElementById('capture360-btn').disabled = !active;
+    }
+
+    createCameraUI();
+    loadDevices();
+  </script>
+</body>
+</html>
