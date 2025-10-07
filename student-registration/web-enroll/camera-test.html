@@ -28,6 +28,7 @@
     let devices = [];
     let currentDeviceIndex = 0;
     let active = false;
+    let capturedImages = [];
 
     const container = document.getElementById('camera-container');
     const capturesDiv = document.getElementById('captures');
@@ -41,6 +42,7 @@
             <button id="toggle-btn" disabled>Switch Camera</button>
             <button id="capture-btn" disabled>Capture</button>
             <button id="capture360-btn" disabled>360 Capture (10)</button>
+            <button id="send-btn" disabled>Send Images</button>
             <span id="countdown" style="display:none;"></span>
           </div>
           <div style="margin-top: 10px;">
@@ -55,6 +57,7 @@
       document.getElementById('toggle-btn').onclick = toggleCamera;
       document.getElementById('capture-btn').onclick = snapOne;
       document.getElementById('capture360-btn').onclick = () => start360(10, 600);
+      document.getElementById('send-btn').onclick = sendImages;
     }
 
     async function loadDevices() {
@@ -125,13 +128,16 @@
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
       canvas.toBlob((blob) => {
+        const base64 = canvas.toDataURL('image/jpeg', 0.9);
+        capturedImages.push(base64);
         const img = document.createElement('img');
-        img.src = URL.createObjectURL(blob);
+        img.src = base64;
         img.style.width = '100px';
         img.style.height = '100px';
         img.style.objectFit = 'cover';
         img.style.margin = '5px';
         capturesDiv.appendChild(img);
+        updateButtons();
       }, 'image/jpeg', 0.9);
     }
 
@@ -144,6 +150,7 @@
         if (taken >= shots) {
           clearInterval(id);
           countdownSpan.style.display = 'none';
+          updateButtons();
           return;
         }
         const video = document.getElementById('video');
@@ -154,8 +161,10 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
         canvas.toBlob((blob) => {
+          const base64 = canvas.toDataURL('image/jpeg', 0.9);
+          capturedImages.push(base64);
           const img = document.createElement('img');
-          img.src = URL.createObjectURL(blob);
+          img.src = base64;
           img.style.width = '100px';
           img.style.height = '100px';
           img.style.objectFit = 'cover';
@@ -167,12 +176,21 @@
       }, intervalMs);
     }
 
+    function sendImages() {
+      if (capturedImages.length === 0) return;
+      window.parent.postMessage({ type: 'camera-capture', images: capturedImages }, '*');
+      capturedImages = [];
+      capturesDiv.innerHTML = '';
+      updateButtons();
+    }
+
     function updateButtons() {
       document.getElementById('open-btn').disabled = active;
       document.getElementById('close-btn').disabled = !active;
       document.getElementById('toggle-btn').disabled = !active || devices.length <= 1;
       document.getElementById('capture-btn').disabled = !active;
       document.getElementById('capture360-btn').disabled = !active;
+      document.getElementById('send-btn').disabled = capturedImages.length === 0;
     }
 
     createCameraUI();

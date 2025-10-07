@@ -229,7 +229,7 @@ export default function EnrollForm() {
                 <div style={{ fontWeight: 600, fontSize: '18px', color: '#3a6b35' }}>{s.rollNo} — {s.name}</div>
                 <div className="note">{new Date(s.createdAt).toLocaleString()}</div>
                 <div className="grid" style={{ marginTop: 12 }}>
-                  {(s.imageFileIds || []).slice(0,3).map((id, idx) => (
+                  {(s.imageFileIds || []).filter((_, idx) => !(s.is360Flags && s.is360Flags[idx])).slice(0,3).map((id, idx) => (
                     <img className="thumb" key={idx} src={imageUrl(id)} alt="face" />
                   ))}
                 </div>

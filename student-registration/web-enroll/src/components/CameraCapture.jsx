@@ -8,6 +8,30 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
   const [devices, setDevices] = useState([]);
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState(0);
   const [permissionGranted, setPermissionGranted] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile
+  useEffect(() => {
+    const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+    setIsMobile(mobile);
+  }, []);
+
+  // Listen for messages from child window
+  useEffect(() => {
+    const handleMessage = async (event) => {
+      if (event.data.type === 'camera-capture') {
+        const { images } = event.data;
+        const blobs = await Promise.all(images.map(base64 => fetch(base64).then(res => res.blob())));
+        if (images.length === 1) {
+          onCapture && onCapture(blobs[0]);
+        } else {
+          onManyCapture && onManyCapture(blobs);
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   // Load available camera devices
   useEffect(() => {
@@ -157,6 +181,11 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
     }, intervalMs);
   };
 
+  const openCameraInNewTab = () => {
+    const url = './camera-test.html';
+    window.open(url, '_blank', 'width=800,height=600');
+  };
+
   return (
     <div
       style={{
@@ -165,78 +194,88 @@ export default function CameraCapture({ onCapture, onManyCapture }) {
         borderRadius: 8,
       }}
     >
-      <div
-        className="actions"
-        style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
-      >
-        {!active ? (
-          <button
-            onClick={() => start({ facingMode: "user" })}
-            style={{ flex: "1 1 auto", minWidth: "120px" }}
-          >
-            Open Camera
+      {isMobile ? (
+        <div className="actions" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <button onClick={openCameraInNewTab} style={{ flex: "1 1 auto", minWidth: "120px" }}>
+            Open Camera in New Tab
           </button>
-        ) : (
-          <button
-            onClick={stop}
-            style={{ flex: "1 1 auto", minWidth: "120px" }}
+        </div>
+      ) : (
+        <>
+          <div
+            className="actions"
+            style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
           >
-            Close Camera
-          </button>
-        )}
+            {!active ? (
+              <button
+                onClick={() => start({ facingMode: "user" })}
+                style={{ flex: "1 1 auto", minWidth: "120px" }}
+              >
+                Open Camera
+              </button>
+            ) : (
+              <button
+                onClick={stop}
+                style={{ flex: "1 1 auto", minWidth: "120px" }}
+              >
+                Close Camera
+              </button>
+            )}
 
-        <button
-          onClick={toggleCamera}
-          disabled={!active}
-          style={{ flex: "1 1 auto", minWidth: "120px" }}
-        >
-          Switch Camera
-        </button>
+            <button
+              onClick={toggleCamera}
+              disabled={!active}
+              style={{ flex: "1 1 auto", minWidth: "120px" }}
+            >
+              Switch Camera
+            </button>
 
-        <button
-          onClick={snapOne}
-          disabled={!active}
-          style={{ flex: "1 1 auto", minWidth: "120px" }}
-        >
-          Capture
-        </button>
+            <button
+              onClick={snapOne}
+              disabled={!active}
+              style={{ flex: "1 1 auto", minWidth: "120px" }}
+            >
+              Capture
+            </button>
 
-        <button
-          onClick={() => start360(10, 600)}
-          disabled={!active}
-          style={{ flex: "1 1 auto", minWidth: "120px" }}
-        >
-          360 Capture (10)
-        </button>
+            <button
+              onClick={() => start360(10, 600)}
+              disabled={!active}
+              style={{ flex: "1 1 auto", minWidth: "120px" }}
+            >
+              360 Capture (10)
+            </button>
 
-        {countdown > 0 && <span className="badge">{countdown} left</span>}
-      </div>
+            {countdown > 0 && <span className="badge">{countdown} left</span>}
+          </div>
 
-      <div style={{ marginTop: 10 }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{
-            width: "100%",
-            maxHeight: "300px",
-            borderRadius: 8,
-            background: "#000",
-          }}
-        />
-      </div>
+          <div style={{ marginTop: 10 }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{
+                width: "100%",
+                maxHeight: "300px",
+                borderRadius: 8,
+                background: "#000",
+              }}
+            />
+          </div>
 
-      {permissionGranted === false && (
-        <p style={{ color: "red", textAlign: "center", marginTop: 8 }}>
-          Camera access denied. Please enable it in your browser settings.
-        </p>
+          {permissionGranted === false && (
+            <p style={{ color: "red", textAlign: "center", marginTop: 8 }}>
+              Camera access denied. Please enable it in your browser settings.
+            </p>
+          )}
+
+          <p className="note" style={{ marginTop: 6, fontSize: 13 }}>
+            Tip: For 360 capture, slowly turn your phone left/right and tilt a bit
+            for better angles.
+          </p>
+        </>
       )}
-
-      <p className="note" style={{ marginTop: 6, fontSize: 13 }}>
-        Tip: For 360 capture, slowly turn your phone left/right and tilt a bit
-        for better angles.
-      </p>
     </div>
   );
 }
